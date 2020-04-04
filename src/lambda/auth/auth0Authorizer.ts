@@ -56,6 +56,6 @@ function verifyToken(authHeader: string) {
 
     console.log('type of token: ', typeof token)
     if (token !== '123')
-      throw new Error('invalid token')
+      throw new Error('Invalid token')
    
   }
