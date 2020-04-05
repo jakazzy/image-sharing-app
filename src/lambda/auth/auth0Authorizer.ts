@@ -1,19 +1,21 @@
 import { CustomAuthorizerHandler, CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
 import 'source-map-support/register'
 
-// import { verify } from 'jsonwebtoken'
-// import { JwtToken } from '../../auth/JwtToken'
+import { verify } from 'jsonwebtoken'
+import { JwtToken } from '../../auth/JwtToken'
+
+const auth0Secret = process.env.AUTH_0_SECRET
 
 export const handler: CustomAuthorizerHandler = async (event: CustomAuthorizerEvent): Promise<CustomAuthorizerResult> => {
     console.log('Event from authorization: ', event)
     const value = event.authorizationToken.split(' ')
     console.log('type of token: ', value[1],' ', typeof value[1] )
     try{
-        verifyToken(event.authorizationToken)
+        const decodedToken =verifyToken(event.authorizationToken)
         console.log('User was authorized')
 
         return {
-            principalId: 'user',
+            principalId: decodedToken.sub,
             policyDocument: {
               Version: '2012-10-17',
               Statement: [
@@ -44,7 +46,7 @@ export const handler: CustomAuthorizerHandler = async (event: CustomAuthorizerEv
     }
 }
 
-function verifyToken(authHeader: string) {
+function verifyToken(authHeader: string): JwtToken {
     if (!authHeader)
       throw new Error('No authentication header')
   
@@ -55,7 +57,7 @@ function verifyToken(authHeader: string) {
     const token = split[1]
 
     console.log('type of token: ', typeof token)
-    if (token !== '123')
-      throw new Error('Invalid token')
-   
+    // if (token !== '123')
+    //   throw new Error('Invalid token')
+    return verify(token, auth0Secret) as JwtToken
   }

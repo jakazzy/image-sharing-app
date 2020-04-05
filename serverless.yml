@@ -41,6 +41,7 @@ provider:
     IMAGE_ID_INDEX: ImageIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-asare-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
+    AUTH_0_SECRET: NRs5sfibszuu6DnWm2NSzw1f3RwaW1IpTIzCHqbUHLa96YXloY1AsBrnItdw0F-_
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
