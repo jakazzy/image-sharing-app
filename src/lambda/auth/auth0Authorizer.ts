@@ -1,17 +1,19 @@
-import { CustomAuthorizerHandler, CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
+import {  CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
 import 'source-map-support/register'
-
 import { verify } from 'jsonwebtoken'
 import { JwtToken } from '../../auth/JwtToken'
+import * as middy from 'middy'
+import { secretsManager } from 'middy/middlewares'
 
-const auth0Secret = process.env.AUTH_0_SECRET
 
-export const handler: CustomAuthorizerHandler = async (event: CustomAuthorizerEvent): Promise<CustomAuthorizerResult> => {
+const secretId = process.env.AUTH_0_SECRET_ID
+const secretField = process.env.AUTH_0_SECRET_FIELD
+
+export const handler = middy(async (event: CustomAuthorizerEvent, context): Promise<CustomAuthorizerResult> => {
     console.log('Event from authorization: ', event)
-    const value = event.authorizationToken.split(' ')
-    console.log('type of token: ', value[1],' ', typeof value[1] )
+    
     try{
-        const decodedToken =verifyToken(event.authorizationToken)
+        const decodedToken = verifyToken(event.authorizationToken, context.AUTH0_SECRET[secretField])
         console.log('User was authorized')
 
         return {
@@ -44,9 +46,9 @@ export const handler: CustomAuthorizerHandler = async (event: CustomAuthorizerEv
             }
           }
     }
-}
+})
 
-function verifyToken(authHeader: string): JwtToken {
+ function verifyToken(authHeader: string, secret:string ): JwtToken {
     if (!authHeader)
       throw new Error('No authentication header')
   
@@ -55,9 +57,22 @@ function verifyToken(authHeader: string): JwtToken {
   
     const split = authHeader.split(' ')
     const token = split[1]
+    console.log('token: ', token )
 
-    console.log('type of token: ', typeof token)
-    // if (token !== '123')
-    //   throw new Error('Invalid token')
-    return verify(token, auth0Secret) as JwtToken
+    console.log('secret: ', secret,'secretObject: ' )
+    return verify(token, secret) as JwtToken
   }
+
+  handler.use(
+    secretsManager({
+      awsSdkOptions: { region: 'us-east-1' },
+      cache: true,
+      cacheExpiryInMillis: 60000,
+      // Throw an error if can't read the secret
+      throwOnFailedCall: true,
+      secrets: {
+        AUTH0_SECRET: secretId
+      }
+    })
+  )
+  
